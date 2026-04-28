@@ -1,0 +1,50 @@
+openapi: 3.0.2
+info:
+    title: ChatBot_Interop
+    version: 1.0.0
+    description: A brand new API with no content.  Go nuts!
+paths:
+    /weather:
+        get:
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            examples:
+                                Paris:
+                                    value:
+                                        city: Paris
+                                        temperature: 18.5
+                                        condition: Cloudy
+                                        forecast:
+                                            -
+                                                date: '2026-04-29'
+                                                temperature: 20
+                                                condition: Sunny
+                                            -
+                                                date: '2026-04-30'
+                                                temperature: 17
+                                                condition: Rainy
+                    description: La réponse est OK
+                '400':
+                    description: Ville invalide
+                '404':
+                    description: Ville non trouvée
+                '500':
+                    description: Erreur API
+            summary: Condition météo + température + prévision si spécifié
+        parameters:
+            -
+                name: city
+                description: La ville (requis)
+                schema:
+                    type: string
+                in: query
+                required: true
+            -
+                name: forecast
+                description: 'True si on veut les 2 prochains jours, False sinon.'
+                schema:
+                    type: boolean
+                in: query
+                required: false
