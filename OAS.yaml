@@ -2,7 +2,7 @@ openapi: 3.0.2
 info:
     title: ChatBot_Interop
     version: 1.0.0
-    description: A brand new API with no content.  Go nuts!
+    description: API pour le mini projet ChatBot en cours d'Interopérabilité.
 paths:
     /weather:
         get:
@@ -48,3 +48,15 @@ paths:
                     type: boolean
                 in: query
                 required: false
+    /jokes/random:
+        get:
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            examples:
+                                Une blague:
+                                    value:
+                                        id: 3
+                                        title: Blague super drole
+                                        text: Ahahahah l'humour de fou la
