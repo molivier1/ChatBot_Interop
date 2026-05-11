@@ -6,6 +6,22 @@ info:
 paths:
     /weather:
         get:
+            parameters:
+                -
+                    name: city
+                    description: La ville (requis)
+                    schema:
+                        type: string
+                    in: query
+                    required: true
+                -
+                    name: forecast
+                    description: 'True si on veut les 2 prochains jours, False sinon.'
+                    schema:
+                        default: false
+                        type: boolean
+                    in: query
+                    required: false
             responses:
                 '200':
                     content:
@@ -25,29 +41,14 @@ paths:
                                                 date: '2026-04-30'
                                                 temperature: 17
                                                 condition: Rainy
-                    description: La réponse est OK
+                    description: Météo récupérée avec succès.
                 '400':
-                    description: Ville invalide
+                    description: Ville invalide.
                 '404':
-                    description: Ville non trouvée
+                    description: Ville non trouvée.
                 '500':
-                    description: Erreur API
+                    description: Erreur API météo.
             summary: Condition météo + température + prévision si spécifié
-        parameters:
-            -
-                name: city
-                description: La ville (requis)
-                schema:
-                    type: string
-                in: query
-                required: true
-            -
-                name: forecast
-                description: 'True si on veut les 2 prochains jours, False sinon.'
-                schema:
-                    type: boolean
-                in: query
-                required: false
     /jokes/random:
         get:
             responses:
@@ -55,14 +56,16 @@ paths:
                     content:
                         application/json:
                             examples:
-                                Une blague:
+                                Une_blague:
                                     value:
                                         id: 3
-                                        title: Blague super drole
-                                        text: Ahahahah l'humour de fou la
-                    description: Ok.
+                                        title: Blague super drôle
+                                        text: Ahahahah l'humour de fou là
+                                        rating: 8.5
+                    description: Blague récupérée avec succès.
                 '500':
-                    description: L'humour est mort.
+                    description: Impossible de récupérer une blague.
+            summary: Retourne une blague aléatoire
     /messages:
         post:
             requestBody:
@@ -71,7 +74,7 @@ paths:
                         examples:
                             Exemple_message:
                                 value:
-                                    idChat: '67'
+                                    chatId: '67'
                                     text: Yo la team
                 required: true
             responses:
@@ -81,15 +84,16 @@ paths:
                             examples:
                                 Exemple_reponse:
                                     value:
-                                        idChat: 67
-                                        idMsg: 6767
+                                        chatId: '67'
+                                        messageId: 6767
                                         text: Yo la team
-                                        status: GOOD
-                                        time: un_timestamp
-                    description: Ok.
+                                        status: SENT
+                                        timestamp: '2026-05-11T14:32:00Z'
+                    description: Message envoyé avec succès.
                 '400':
-                    description: Invalide.
+                    description: Requête invalide.
                 '404':
-                    description: Not found.
+                    description: Conversation Telegram introuvable.
                 '500':
-                    description: Pb API.
+                    description: Erreur API Telegram.
+            summary: Envoie un message Telegram
