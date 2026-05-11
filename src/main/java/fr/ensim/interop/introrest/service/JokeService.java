@@ -1,26 +1,44 @@
 package fr.ensim.interop.introrest.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import fr.ensim.interop.introrest.model.Joke;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class JokeService {
 
-    private static final List<Joke> JOKES = Arrays.asList(
-            new Joke(1, "Le mathématicien", "Pourquoi les mathématiciens font des barbecues ? Parce qu'ils adorent les pi-grillades !", 7.5),
-            new Joke(2, "Le chat", "Qu'est-ce qu'un chat qui tombe dans un pot de peinture le jour de Noël ? Un chat-peint de Noël !", 6.0),
-            new Joke(3, "L'informaticien", "Pourquoi les informaticiens confondent-ils Halloween et Noël ? Parce que Oct 31 = Dec 25 !", 9.0),
-            new Joke(4, "Le crocodile", "Qu'est-ce qu'un crocodile qui surveille la cour d'école ? Un sac à dents !", 7.0),
-            new Joke(5, "Le programmeur", "Un programmeur entre dans un bar, commande 1 bière, puis 0 bières, puis 2147483647 bières.", 8.5)
-    );
+    @Value("${blagues.api.url}")
+    private String blaguesApiUrl;
 
-    private final Random random = new Random();
+    @Value("${blagues.api.token}")
+    private String blaguesApiToken;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     public Joke getRandomJoke() {
-        return JOKES.get(random.nextInt(JOKES.size()));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(blaguesApiToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        JsonNode response = restTemplate.exchange(blaguesApiUrl, HttpMethod.GET, request, JsonNode.class).getBody();
+
+        if (response == null) {
+            return null;
+        }
+
+        Integer id = response.hasNonNull("id") ? response.get("id").asInt() : null;
+        String type = response.hasNonNull("type") ? response.get("type").asText() : "blague";
+        String question = response.hasNonNull("joke") ? response.get("joke").asText() : "";
+        String answer = response.hasNonNull("answer") ? response.get("answer").asText() : "";
+        String text = answer.isEmpty() ? question : question + "\n" + answer;
+
+        return new Joke(id, "Blague " + type, text, null);
     }
 }

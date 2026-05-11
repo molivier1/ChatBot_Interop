@@ -124,7 +124,12 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 
 	private void handleBlague(Long chatId) {
 		Joke joke = jokeService.getRandomJoke();
-		String reply = joke.getTitle() + "\n" + joke.getText() + "\nNote : " + joke.getRating() + "/10";
+		if (joke == null) {
+			sendMessage(chatId, "Impossible de recuperer une blague pour l'instant.");
+			return;
+		}
+
+		String reply = joke.getTitle() + "\n" + joke.getText();
 		sendMessage(chatId, reply);
 	}
 
