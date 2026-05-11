@@ -199,3 +199,6 @@ README.html
 *.iml
 .idea
 .exercism
+
+# clé grok
+application.properties

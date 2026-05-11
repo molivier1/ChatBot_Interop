@@ -4,6 +4,7 @@ import fr.ensim.interop.introrest.model.Joke;
 import fr.ensim.interop.introrest.model.WeatherResponse;
 import fr.ensim.interop.introrest.model.telegram.ApiResponseUpdateTelegram;
 import fr.ensim.interop.introrest.model.telegram.Update;
+import fr.ensim.interop.introrest.service.ConversationService;
 import fr.ensim.interop.introrest.service.JokeService;
 import fr.ensim.interop.introrest.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +40,17 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 	@Autowired
 	private JokeService jokeService;
 
+	@Autowired
+	private ConversationService conversationService;
+
 	private int offset = 0;
 
 	@Override
 	public void run(String... args) throws Exception {
 		Logger.getLogger("ListenerUpdateTelegram").log(Level.INFO, "Démarrage du listener d'updates Telegram...");
+
+		// On récupère le dernier update_id pour ignorer l'historique au démarrage
+		skipOldUpdates();
 
 		Timer timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -52,6 +59,20 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 				pollUpdates();
 			}
 		}, 0, 3000);
+	}
+
+	private void skipOldUpdates() {
+		try {
+			String url = telegramApiUrl + telegramBotId + "/getUpdates";
+			ApiResponseUpdateTelegram response = restTemplate.getForObject(url, ApiResponseUpdateTelegram.class);
+			if (response != null && response.getOk() && !response.getResult().isEmpty()) {
+				List<Update> updates = response.getResult();
+				offset = updates.get(updates.size() - 1).getUpdateId() + 1;
+				Logger.getLogger("ListenerUpdateTelegram").log(Level.INFO, "Historique ignoré, offset initialisé à " + offset);
+			}
+		} catch (Exception e) {
+			Logger.getLogger("ListenerUpdateTelegram").log(Level.WARNING, "Impossible d'initialiser l'offset : " + e.getMessage());
+		}
 	}
 
 	private void pollUpdates() {
@@ -80,10 +101,10 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 					handleBlague(chatId);
 				} else if (normalized.contains("maya")) {
 					sendMessage(chatId, "Maya est une super étudiante en informatique à l'ENSIM (oui oui tqt 🧕🏼)!");
-				} else if (normalized.contains("gabriel") || normalized.contains("salut")) {
+				} else if (normalized.contains("gabriel")) {
 					sendMessage(chatId, "euhhhh salut je suis gay et fier de l'être 🏳️‍🌈");
 				} else {
-					sendMessage(chatId, "Désolé, je n'ai pas compris votre message.");
+					sendMessage(chatId, conversationService.chat(text));
 				}
 			}
 		} catch (Exception e) {
