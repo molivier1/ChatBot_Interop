@@ -1,0 +1,99 @@
+openapi: 3.0.2
+info:
+    title: ChatBot_Interop
+    version: 1.0.0
+    description: API pour le mini projet ChatBot en cours d'Interopérabilité.
+paths:
+    /weather:
+        get:
+            parameters:
+                -
+                    name: city
+                    description: La ville (requis)
+                    schema:
+                        type: string
+                    in: query
+                    required: true
+                -
+                    name: forecast
+                    description: 'True si on veut les 2 prochains jours, False sinon.'
+                    schema:
+                        default: false
+                        type: boolean
+                    in: query
+                    required: false
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            examples:
+                                Paris:
+                                    value:
+                                        city: Paris
+                                        temperature: 18.5
+                                        condition: Cloudy
+                                        forecast:
+                                            -
+                                                date: '2026-04-29'
+                                                temperature: 20
+                                                condition: Sunny
+                                            -
+                                                date: '2026-04-30'
+                                                temperature: 17
+                                                condition: Rainy
+                    description: Météo récupérée avec succès.
+                '400':
+                    description: Ville invalide.
+                '404':
+                    description: Ville non trouvée.
+                '500':
+                    description: Erreur API météo.
+            summary: Condition météo + température + prévision si spécifié
+    /jokes/random:
+        get:
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            examples:
+                                Une_blague:
+                                    value:
+                                        id: 3
+                                        title: Blague super drôle
+                                        text: Ahahahah l'humour de fou là
+                                        rating: 8.5
+                    description: Blague récupérée avec succès.
+                '500':
+                    description: Impossible de récupérer une blague.
+            summary: Retourne une blague aléatoire
+    /messages:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        examples:
+                            Exemple_message:
+                                value:
+                                    chatId: '67'
+                                    text: Yo la team
+                required: true
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            examples:
+                                Exemple_reponse:
+                                    value:
+                                        chatId: '67'
+                                        messageId: 6767
+                                        text: Yo la team
+                                        status: SENT
+                                        timestamp: '2026-05-11T14:32:00Z'
+                    description: Message envoyé avec succès.
+                '400':
+                    description: Requête invalide.
+                '404':
+                    description: Conversation Telegram introuvable.
+                '500':
+                    description: Erreur API Telegram.
+            summary: Envoie un message Telegram
