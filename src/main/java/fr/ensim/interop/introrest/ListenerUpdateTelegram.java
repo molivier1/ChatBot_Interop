@@ -1,7 +1,11 @@
 package fr.ensim.interop.introrest;
 
+import fr.ensim.interop.introrest.model.Joke;
+import fr.ensim.interop.introrest.model.WeatherResponse;
 import fr.ensim.interop.introrest.model.telegram.ApiResponseUpdateTelegram;
 import fr.ensim.interop.introrest.model.telegram.Update;
+import fr.ensim.interop.introrest.service.JokeService;
+import fr.ensim.interop.introrest.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +33,12 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 	@Autowired
 	private RestTemplate restTemplate;
 
+	@Autowired
+	private WeatherService weatherService;
+
+	@Autowired
+	private JokeService jokeService;
+
 	private int offset = 0;
 
 	@Override
@@ -41,7 +51,7 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 			public void run() {
 				pollUpdates();
 			}
-		}, 0, 3000); // démarre immédiatement, se répète toutes les 3 secondes
+		}, 0, 3000);
 	}
 
 	private void pollUpdates() {
@@ -53,7 +63,6 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 
 			List<Update> updates = response.getResult();
 			for (Update update : updates) {
-				// On met à jour l'offset pour ne pas retraiter cet update au prochain appel
 				offset = update.getUpdateId() + 1;
 
 				if (!update.hasMessage()) continue;
@@ -64,21 +73,59 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 				if (text == null) continue;
 
 				String normalized = normalize(text);
+
 				if (normalized.contains("meteo")) {
-					sendMessage(chatId, "Météo non disponible pour l'instant.");
+					handleMeteo(chatId, text);
 				} else if (normalized.contains("blague")) {
-					sendMessage(chatId, "Blague non disponible pour l'instant.");
-				}
-				else if (normalized.contains("maya")) {
+					handleBlague(chatId);
+				} else if (normalized.contains("maya")) {
 					sendMessage(chatId, "Maya est une super étudiante en informatique à l'ENSIM (oui oui tqt 🧕🏼)!");
-				}
-				else {
+				} else if (normalized.contains("gabriel") || normalized.contains("salut")) {
+					sendMessage(chatId, "euhhhh salut je suis gay et fier de l'être 🏳️‍🌈");
+				} else {
 					sendMessage(chatId, "Désolé, je n'ai pas compris votre message.");
 				}
 			}
 		} catch (Exception e) {
 			Logger.getLogger("ListenerUpdateTelegram").log(Level.WARNING, "Erreur lors du polling : " + e.getMessage());
 		}
+	}
+
+	private void handleMeteo(Long chatId, String text) {
+		// Cherche le mot après "meteo" comme ville, ex: "meteo Paris" → "Paris"
+		String[] words = text.trim().split("\\s+");
+		String city = null;
+		for (int i = 0; i < words.length; i++) {
+			if (normalize(words[i]).contains("meteo") && i + 1 < words.length) {
+				city = String.join(" ", java.util.Arrays.copyOfRange(words, i + 1, words.length));
+				break;
+			}
+		}
+
+		if (city == null) {
+			sendMessage(chatId, "donne moi le nom de ta ville ! Exemple : meteo Paris");
+			return;
+		}
+
+		try {
+			WeatherResponse weather = weatherService.getWeather(city, false);
+			if (weather == null) {
+				sendMessage(chatId, "Impossible de récupérer la météo pour " + city + ".");
+				return;
+			}
+			String reply = "Météo à " + weather.getCity() + " : "
+					+ weather.getTemperature() + "°C, "
+					+ weather.getCondition();
+			sendMessage(chatId, reply);
+		} catch (Exception e) {
+			sendMessage(chatId, "Ville introuvable : " + city);
+		}
+	}
+
+	private void handleBlague(Long chatId) {
+		Joke joke = jokeService.getRandomJoke();
+		String reply = joke.getTitle() + "\n" + joke.getText() + "\nNote : " + joke.getRating() + "/10";
+		sendMessage(chatId, reply);
 	}
 
 	private String normalize(String text) {
