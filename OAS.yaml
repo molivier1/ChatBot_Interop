@@ -60,3 +60,36 @@ paths:
                                         id: 3
                                         title: Blague super drole
                                         text: Ahahahah l'humour de fou la
+                    description: Ok.
+                '500':
+                    description: L'humour est mort.
+    /messages:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        examples:
+                            Exemple_message:
+                                value:
+                                    idChat: '67'
+                                    text: Yo la team
+                required: true
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            examples:
+                                Exemple_reponse:
+                                    value:
+                                        idChat: 67
+                                        idMsg: 6767
+                                        text: Yo la team
+                                        status: GOOD
+                                        time: un_timestamp
+                    description: Ok.
+                '400':
+                    description: Invalide.
+                '404':
+                    description: Not found.
+                '500':
+                    description: Pb API.
