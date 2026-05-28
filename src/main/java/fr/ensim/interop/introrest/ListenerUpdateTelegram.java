@@ -90,21 +90,22 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 
 				String text = update.getMessage().getText();
 				Long chatId = update.getMessage().getChatId();
+				Integer messageId = update.getMessage().getMessageId();
 
 				if (text == null) continue;
 
 				String normalized = normalize(text);
 
 				if (normalized.contains("meteo")) {
-					handleMeteo(chatId, text);
+					handleMeteo(chatId, text, messageId);
 				} else if (normalized.contains("blague")) {
-					handleBlague(chatId);
+					handleBlague(chatId, messageId);
 				} else if (normalized.contains("maya")) {
-					sendMessage(chatId, "Maya est une super étudiante en informatique à l'ENSIM (oui oui tqt 🧕🏼)!");
+					sendMessage(chatId, "Maya est une super étudiante en informatique à l'ENSIM (oui oui tqt 🧕🏼)!", messageId);
 				} else if (normalized.contains("gabriel")) {
-					sendMessage(chatId, "euhhhh salut je suis gay et fier de l'être 🏳️‍🌈");
+					sendMessage(chatId, "euhhhh salut je suis gay et fier de l'être 🏳️‍🌈", messageId);
 				} else {
-					sendMessage(chatId, conversationService.chat(text));
+					sendMessage(chatId, conversationService.chat(text), messageId);
 				}
 			}
 		} catch (Exception e) {
@@ -112,8 +113,7 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 		}
 	}
 
-	private void handleMeteo(Long chatId, String text) {
-		// Cherche le mot après "meteo" comme ville, ex: "meteo Paris" → "Paris"
+	private void handleMeteo(Long chatId, String text, Integer messageId) {
 		String[] words = text.trim().split("\\s+");
 		String city = null;
 		for (int i = 0; i < words.length; i++) {
@@ -124,34 +124,32 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 		}
 
 		if (city == null) {
-			sendMessage(chatId, "donne moi le nom de ta ville ! Exemple : meteo Paris");
+			sendMessage(chatId, "Donne moi le nom de ta ville ! Exemple : meteo Paris", messageId);
 			return;
 		}
 
 		try {
 			WeatherResponse weather = weatherService.getWeather(city, false);
 			if (weather == null) {
-				sendMessage(chatId, "Impossible de récupérer la météo pour " + city + ".");
+				sendMessage(chatId, "Impossible de récupérer la météo pour " + city + ".", messageId);
 				return;
 			}
 			String reply = "Météo à " + weather.getCity() + " : "
 					+ weather.getTemperature() + "°C, "
 					+ weather.getCondition();
-			sendMessage(chatId, reply);
+			sendMessage(chatId, reply, messageId);
 		} catch (Exception e) {
-			sendMessage(chatId, "Ville introuvable : " + city);
+			sendMessage(chatId, "Ville introuvable : " + city, messageId);
 		}
 	}
 
-	private void handleBlague(Long chatId) {
+	private void handleBlague(Long chatId, Integer messageId) {
 		Joke joke = jokeService.getRandomJoke();
 		if (joke == null) {
-			sendMessage(chatId, "Impossible de recuperer une blague pour l'instant.");
+			sendMessage(chatId, "Impossible de récupérer une blague pour l'instant.", messageId);
 			return;
 		}
-
-		String reply = joke.getTitle() + "\n" + joke.getText();
-		sendMessage(chatId, reply);
+		sendMessage(chatId, joke.getTitle() + "\n" + joke.getText(), messageId);
 	}
 
 	private String normalize(String text) {
@@ -159,11 +157,12 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 		return decomposed.replaceAll("\\p{InCombiningDiacriticalMarks}", "").toLowerCase();
 	}
 
-	private void sendMessage(Long chatId, String text) {
+	private void sendMessage(Long chatId, String text, Integer replyToMessageId) {
 		String url = telegramApiUrl + telegramBotId + "/sendMessage";
 		Map<String, String> body = new HashMap<>();
 		body.put("chat_id", String.valueOf(chatId));
 		body.put("text", text);
+		body.put("reply_to_message_id", String.valueOf(replyToMessageId));
 		restTemplate.postForObject(url, body, String.class);
 	}
 }
