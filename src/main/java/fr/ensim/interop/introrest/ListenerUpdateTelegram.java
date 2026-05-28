@@ -1,5 +1,6 @@
 package fr.ensim.interop.introrest;
 
+import fr.ensim.interop.introrest.model.ForecastDay;
 import fr.ensim.interop.introrest.model.Joke;
 import fr.ensim.interop.introrest.model.WeatherResponse;
 import fr.ensim.interop.introrest.model.telegram.ApiResponseUpdateTelegram;
@@ -115,29 +116,50 @@ public class ListenerUpdateTelegram implements CommandLineRunner {
 
 	private void handleMeteo(Long chatId, String text, Integer messageId) {
 		String[] words = text.trim().split("\\s+");
-		String city = null;
-		for (int i = 0; i < words.length; i++) {
-			if (normalize(words[i]).contains("meteo") && i + 1 < words.length) {
-				city = String.join(" ", java.util.Arrays.copyOfRange(words, i + 1, words.length));
-				break;
-			}
-		}
 
-		if (city == null) {
-			sendMessage(chatId, "Donne moi le nom de ta ville ! Exemple : meteo Paris", messageId);
+		// Détecte si l'utilisateur veut les prévisions
+		boolean forecast = normalize(text).contains("prevision");
+
+		// Reconstruit les mots sans "meteo" et sans "prevision(s)"
+		StringBuilder cityBuilder = new StringBuilder();
+		for (String word : words) {
+			String n = normalize(word);
+			if (n.contains("meteo") || n.contains("prevision")) continue;
+			if (cityBuilder.length() > 0) cityBuilder.append(" ");
+			cityBuilder.append(word);
+		}
+		String city = cityBuilder.toString().trim();
+
+		if (city.isEmpty()) {
+			String hint = forecast
+					? "Donne moi une ville ! Exemple : meteo previsions Paris"
+					: "Donne moi une ville ! Exemple : meteo Paris";
+			sendMessage(chatId, hint, messageId);
 			return;
 		}
 
 		try {
-			WeatherResponse weather = weatherService.getWeather(city, false);
+			WeatherResponse weather = weatherService.getWeather(city, forecast);
 			if (weather == null) {
 				sendMessage(chatId, "Impossible de récupérer la météo pour " + city + ".", messageId);
 				return;
 			}
-			String reply = "Météo à " + weather.getCity() + " : "
-					+ weather.getTemperature() + "°C, "
-					+ weather.getCondition();
-			sendMessage(chatId, reply, messageId);
+
+			StringBuilder reply = new StringBuilder();
+			reply.append("Météo à ").append(weather.getCity()).append(" : ")
+					.append(weather.getTemperature()).append("°C, ")
+					.append(weather.getCondition());
+
+			if (forecast && weather.getForecast() != null) {
+				reply.append("\n\nPrévisions :");
+				for (ForecastDay day : weather.getForecast()) {
+					reply.append("\n📅 ").append(day.getDate())
+							.append(" : ").append(day.getTemperature()).append("°C, ")
+							.append(day.getCondition());
+				}
+			}
+
+			sendMessage(chatId, reply.toString(), messageId);
 		} catch (Exception e) {
 			sendMessage(chatId, "Ville introuvable : " + city, messageId);
 		}
